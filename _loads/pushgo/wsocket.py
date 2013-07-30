@@ -6,10 +6,11 @@
 
 import json
 import time
-
-from ws4py.client.threadedclient import WebSocketClient
+import os, sys
 
 from loads.case import TestCase
+from loads.websockets import WebSocketClient
+
 from pushtest.utils import (
     get_rand,
     get_prob,
@@ -38,17 +39,29 @@ class WsClient(WebSocketClient):
     uaid = ""
     version = 0
     count = 0
+<<<<<<< HEAD:loads/pushgo/load_gen.py
     sleep = 20
 
+=======
+    sleep = 0
+    put_end = 0
+    put_start = 0
+>>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
     reg_time = 0
     put_start = 0
     put_end = 0
 
     client_type = ""
+<<<<<<< HEAD:loads/pushgo/load_gen.py
     max_sleep = 21
     max_updates = 10
     timeout = 30
     last_time = 0
+=======
+    max_sleep = 1
+    max_updates = 5
+    timeout = 20
+>>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
 
     client_types = {'conn_close': 30,
                     'conn_noack': 5,
@@ -57,8 +70,13 @@ class WsClient(WebSocketClient):
                     'ping_loop': 5}
 
     def opened(self):
+<<<<<<< HEAD:loads/pushgo/load_gen.py
         self.client_type = 'ping_loop'
         #self.client_type = get_prob(self.client_types)
+=======
+        super(WsClient, self).opened()
+        self.client_type = get_prob(self.client_types)
+>>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
         _log(self.client_type)
 
         self.sleep = get_rand(self.max_sleep)
@@ -71,10 +89,16 @@ class WsClient(WebSocketClient):
         self.hello()
 
     def closed(self, code, reason=None):
+<<<<<<< HEAD:loads/pushgo/load_gen.py
         if self.client_type != 'ping_loop':
             _log('\nTime to register: %s s' % (self.reg_time - self.start_time))
             _log('Time to notification: %s s' % (self.put_end - self.put_start))
 
+=======
+        super(WsClient, self).closed(code, reason)
+        print('\nTime to register: %s s' % (self.reg_time - self.start_time))
+        print('Time to notification: %s s' % (self.put_end - self.put_start))
+>>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
         _log("Closed down: %s %s" % (code, reason))
 
     def hello(self):
@@ -122,6 +146,7 @@ class WsClient(WebSocketClient):
             self.last_time = time.time()
 
     def received_message(self, m):
+        super(WsClient, self).received_message(m)
         data = json.loads(m.data)
         self.check_response(data)
         self.check_timeout()
@@ -165,6 +190,7 @@ class WsClient(WebSocketClient):
                 self.count += 1
 
 
+<<<<<<< HEAD:loads/pushgo/load_gen.py
 class TestLoad(TestCase):
 
     """
@@ -182,9 +208,6 @@ class TestLoad(TestCase):
     def test_load(self):
         try:
             ws = WsClient(TARGET_SERVER)
+=======
+>>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
 
-            ws.connect()
-            ws.run_forever()
-        except Exception as e:
-            _log('Exception: %s' % e)
-            ws.close()
