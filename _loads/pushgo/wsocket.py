@@ -55,6 +55,7 @@ class WsClient(WebSocketClient):
                     'ping_loop': 5}
 
     def opened(self):
+        super(WsClient, self).opened()
         self.client_type = get_prob(self.client_types)
         _log(self.client_type)
 
@@ -67,6 +68,7 @@ class WsClient(WebSocketClient):
         self.hello()
 
     def closed(self, code, reason=None):
+        super(WsClient, self).closed(code, reason)
         print('\nTime to register: %s s' % (self.reg_time - self.start_time))
         print('Time to notification: %s s' % (self.put_end - self.put_start))
         _log("Closed down: %s %s" % (code, reason))
@@ -108,6 +110,7 @@ class WsClient(WebSocketClient):
         self.hello()
 
     def received_message(self, m):
+        super(WsClient, self).received_message(m)
         data = json.loads(m.data)
         self.check_response(data)
 
