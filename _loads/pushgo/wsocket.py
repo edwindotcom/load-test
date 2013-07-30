@@ -11,7 +11,7 @@ import os, sys
 from loads.case import TestCase
 from loads.websockets import WebSocketClient
 
-from pushtest.utils import (
+from utils import (
     get_rand,
     get_prob,
     get_uaid,
@@ -19,13 +19,10 @@ from pushtest.utils import (
     send_http_put)
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
-# TARGET_SERVER = "ws://localhost:8080"
+VERBOSE = True
 
-# either error or debug
-LOG_LEVEL = 'error' 
-
-def _log(txt, level = 'debug'):
-    if LOG_LEVEL == level:
+def _log(txt):
+    if VERBOSE:
         print '::', txt
 
 
@@ -39,29 +36,16 @@ class WsClient(WebSocketClient):
     uaid = ""
     version = 0
     count = 0
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-    sleep = 20
-
-=======
     sleep = 0
     put_end = 0
     put_start = 0
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
     reg_time = 0
-    put_start = 0
-    put_end = 0
+    put_time = 0
 
     client_type = ""
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-    max_sleep = 21
-    max_updates = 10
-    timeout = 30
-    last_time = 0
-=======
     max_sleep = 1
     max_updates = 5
     timeout = 20
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
 
     client_types = {'conn_close': 30,
                     'conn_noack': 5,
@@ -70,13 +54,8 @@ class WsClient(WebSocketClient):
                     'ping_loop': 5}
 
     def opened(self):
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-        self.client_type = 'ping_loop'
-        #self.client_type = get_prob(self.client_types)
-=======
         super(WsClient, self).opened()
         self.client_type = get_prob(self.client_types)
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
         _log(self.client_type)
 
         self.sleep = get_rand(self.max_sleep)
@@ -84,21 +63,13 @@ class WsClient(WebSocketClient):
         self.uaid = get_uaid()
         self.version = int(str_gen(8))
         self.start_time = time.time()
-        self.last_time = self.start_time
 
         self.hello()
 
     def closed(self, code, reason=None):
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-        if self.client_type != 'ping_loop':
-            _log('\nTime to register: %s s' % (self.reg_time - self.start_time))
-            _log('Time to notification: %s s' % (self.put_end - self.put_start))
-
-=======
         super(WsClient, self).closed(code, reason)
         print('\nTime to register: %s s' % (self.reg_time - self.start_time))
         print('Time to notification: %s s' % (self.put_end - self.put_start))
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
         _log("Closed down: %s %s" % (code, reason))
 
     def hello(self):
@@ -129,7 +100,7 @@ class WsClient(WebSocketClient):
     def check_response(self, data):
         if "status" in data.keys():
             if data['status'] != 200:
-                _log('ERROR status: %s' % data['status'], 'error')
+                _log('ERROR status: %s' % data['status'])
                 self.close()
 
     def new_chan(self):
@@ -137,33 +108,24 @@ class WsClient(WebSocketClient):
         self.version = int(str_gen(8))
         self.hello()
 
-    def check_timeout(self):
-        _log(time.time() - self.last_time)
-        if time.time() > self.last_time + float(self.timeout):
-            _log('\nTIMEOUT: %s seconds' % self.timeout, 'error')
-            self.close()
-        else:
-            self.last_time = time.time()
-
     def received_message(self, m):
         super(WsClient, self).received_message(m)
         data = json.loads(m.data)
         self.check_response(data)
-        self.check_timeout()
 
         _log(data)
 
         if self.count > self.max_updates:
+            self.close()
+        elif time.time() > self.start_time + float(self.timeout):
+            _log('TIMEOUT: %s seconds' % self.timeout)
             self.close()
         else:
             if "messageType" in data:
                 time.sleep(self.sleep)
 
                 if data["messageType"] == "hello":
-                    if self.client_type == 'ping_loop':
-                        self.ping()
-                    else:
-                        self.reg()
+                    self.reg()
                 if data["messageType"] == "register":
                     self.reg_time = time.time()
                     self.endpoint = data["pushEndpoint"]
@@ -190,24 +152,4 @@ class WsClient(WebSocketClient):
                 self.count += 1
 
 
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-class TestLoad(TestCase):
-
-    """
-    Load test for pushgo. Runs types of tests:
-    - connect, hello, register, update, ack, close
-    - connect, hello, register, update, close
-    - connect, hello, register, update loop one channel, ack, close
-    - connect, hello, register, update loop different channel, ack, close
-    - ping_loop: connect, hello, ping loop, close
-
-    You can run this by installing Loads and running this:
-    loads-runner load_gen.TestLoad.test_load -c 10 -u 10
-    """
-
-    def test_load(self):
-        try:
-            ws = WsClient(TARGET_SERVER)
-=======
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
 

@@ -7,14 +7,7 @@
 import json
 import time
 
-
 from loads.case import TestCase
-from pushtest.utils import (
-    get_rand,
-    get_prob,
-    get_uaid,
-    str_gen,
-    send_http_put)
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
@@ -46,4 +39,3 @@ class TestLoad(TestCase):
 
         ws = self.create_ws(TARGET_SERVER, klass=WsClient)
         ws.connect()
-        #ws.close()
