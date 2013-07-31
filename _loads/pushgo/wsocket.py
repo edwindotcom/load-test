@@ -3,10 +3,11 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import gevent
 import json
 import time
 import os, sys
+import logging
 
 from loads.case import TestCase
 from loads.websockets import WebSocketClient
@@ -20,13 +21,13 @@ from pushtest.utils import (
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
+VERBOSE = True
+TIMEOUT = 10
 
-# either error or debug
-LOG_LEVEL = 'error' 
-
-def _log(txt, level = 'debug'):
-    if LOG_LEVEL == level:
-        print '::', txt
+logger = logging.getLogger('WsClient')
+fh = logging.FileHandler('/tmp/ws-client.log')
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
 
 
 class WsClient(WebSocketClient):
@@ -34,72 +35,53 @@ class WsClient(WebSocketClient):
     """ ws4py websocket client, executes send messages based on
     server response """
 
-    endpoint = ""
-    chan = ""
-    uaid = ""
-    version = 0
-    count = 0
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-    sleep = 20
+    def __init__(self, *args, **kw):
+        super(WsClient, self).__init__(*args, **kw)
+        self.endpoint = ""
+        self.chan = ""
+        self.uaid = ""
+        self.version = 0
+        self.count = 0
+        self.sleep = 0
+        self.put_end = 0
+        self.put_start = 0
+        self.reg_time = 0
+        self.put_time = 0
+        self.client_type = ""
+        self.max_sleep = 1
+        self.max_updates = 5
+        self.timeout = 20
+        self.closer = None
 
-=======
-    sleep = 0
-    put_end = 0
-    put_start = 0
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
-    reg_time = 0
-    put_start = 0
-    put_end = 0
-
-    client_type = ""
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-    max_sleep = 21
-    max_updates = 10
-    timeout = 30
-    last_time = 0
-=======
-    max_sleep = 1
-    max_updates = 5
-    timeout = 20
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
-
-    client_types = {'conn_close': 30,
-                    'conn_noack': 5,
-                    'one_chan': 30,
-                    'multi_chan': 30,
-                    'ping_loop': 5}
+        self.client_types = {'conn_close': 30,
+                        'conn_noack': 5,
+                        'one_chan': 30,
+                        'multi_chan': 30,
+                        'ping_loop': 5}
 
     def opened(self):
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-        self.client_type = 'ping_loop'
-        #self.client_type = get_prob(self.client_types)
-=======
         super(WsClient, self).opened()
         self.client_type = get_prob(self.client_types)
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
-        _log(self.client_type)
-
+        logger.debug(self.client_type)
         self.sleep = get_rand(self.max_sleep)
         self.chan = str_gen(8)
         self.uaid = get_uaid()
         self.version = int(str_gen(8))
         self.start_time = time.time()
-        self.last_time = self.start_time
-
         self.hello()
 
-    def closed(self, code, reason=None):
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-        if self.client_type != 'ping_loop':
-            _log('\nTime to register: %s s' % (self.reg_time - self.start_time))
-            _log('Time to notification: %s s' % (self.put_end - self.put_start))
+    def run_forever(self, timeout=TIMEOUT):
+        # schedule the web socket to close in TIMEOUT seconds
+        # if the server does not do it
+        self.closer = gevent.spawn_later(TIMEOUT, self.close)
+        self.closer.join()
 
-=======
+    def closed(self, code, reason=None):
         super(WsClient, self).closed(code, reason)
-        print('\nTime to register: %s s' % (self.reg_time - self.start_time))
-        print('Time to notification: %s s' % (self.put_end - self.put_start))
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
-        _log("Closed down: %s %s" % (code, reason))
+        logger.debug('Time to register: %s s' % (self.reg_time - self.start_time))
+        logger.debug('Time to notification: %s s' % (self.put_end - self.put_start))
+        logger.debug("Closed down: %s %s" % (code, reason))
+        self.closer.kill()
 
     def hello(self):
         self.send('{"messageType":"hello", "channelIDs":[], "uaid":"%s"}'
@@ -129,7 +111,7 @@ class WsClient(WebSocketClient):
     def check_response(self, data):
         if "status" in data.keys():
             if data['status'] != 200:
-                _log('ERROR status: %s' % data['status'], 'error')
+                logger.error('ERROR status: %s' % data['status'])
                 self.close()
 
     def new_chan(self):
@@ -149,11 +131,12 @@ class WsClient(WebSocketClient):
         super(WsClient, self).received_message(m)
         data = json.loads(m.data)
         self.check_response(data)
-        self.check_timeout()
-
-        _log(data)
+        logger.error(data)
 
         if self.count > self.max_updates:
+            self.close()
+        elif time.time() > self.start_time + float(self.timeout):
+            logger.error('TIMEOUT: %s seconds' % self.timeout)
             self.close()
         else:
             if "messageType" in data:
@@ -189,25 +172,4 @@ class WsClient(WebSocketClient):
 
                 self.count += 1
 
-
-<<<<<<< HEAD:loads/pushgo/load_gen.py
-class TestLoad(TestCase):
-
-    """
-    Load test for pushgo. Runs types of tests:
-    - connect, hello, register, update, ack, close
-    - connect, hello, register, update, close
-    - connect, hello, register, update loop one channel, ack, close
-    - connect, hello, register, update loop different channel, ack, close
-    - ping_loop: connect, hello, ping loop, close
-
-    You can run this by installing Loads and running this:
-    loads-runner load_gen.TestLoad.test_load -c 10 -u 10
-    """
-
-    def test_load(self):
-        try:
-            ws = WsClient(TARGET_SERVER)
-=======
->>>>>>> eef64e52dffa64d0498f5702f77d193373a2e6b2:_loads/pushgo/wsocket.py
 
