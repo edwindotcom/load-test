@@ -77,11 +77,11 @@ class WsClient(WebSocketClient):
         self.closer.join()
 
     def closed(self, code, reason=None):
-        self.closer.kill()
         super(WsClient, self).closed(code, reason)
         print('\nTime to register: %s s' % (self.reg_time - self.start_time))
         print('Time to notification: %s s' % (self.put_end - self.put_start))
         _log("Closed down: %s %s" % (code, reason))
+        self.closer.kill()
 
     def hello(self):
         self.send('{"messageType":"hello", "channelIDs":[], "uaid":"%s"}'
