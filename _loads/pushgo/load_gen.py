@@ -52,8 +52,6 @@ class TestLoad(TestCase):
         ws = self.create_ws(TARGET_SERVER, klass=WsClient)
         ws.connect()
 
-        # schedule the web socket to close in TIMEOUT seconds
-        closer = gevent.spawn_later(TIMEOUT, ws.close)
-
-        # wait here
-        closer.join()
+        # wait here until the server closes the socket
+        # or until timeout is reached
+        ws.run_forever(timeout=TIMEOUT)

@@ -3,7 +3,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import gevent
 import json
 import time
 import os, sys
@@ -21,6 +21,8 @@ from pushtest.utils import (
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
 VERBOSE = True
+TIMEOUT = 10
+
 
 def _log(txt):
     if VERBOSE:
@@ -32,27 +34,29 @@ class WsClient(WebSocketClient):
     """ ws4py websocket client, executes send messages based on
     server response """
 
-    endpoint = ""
-    chan = ""
-    uaid = ""
-    version = 0
-    count = 0
-    sleep = 0
-    put_end = 0
-    put_start = 0
-    reg_time = 0
-    put_time = 0
+    def __init__(self, *args, **kw):
+        super(WsClient, self).__init__(*args, **kw)
+        self.endpoint = ""
+        self.chan = ""
+        self.uaid = ""
+        self.version = 0
+        self.count = 0
+        self.sleep = 0
+        self.put_end = 0
+        self.put_start = 0
+        self.reg_time = 0
+        self.put_time = 0
+        self.client_type = ""
+        self.max_sleep = 1
+        self.max_updates = 5
+        self.timeout = 20
+        self.closer = None
 
-    client_type = ""
-    max_sleep = 1
-    max_updates = 5
-    timeout = 20
-
-    client_types = {'conn_close': 30,
-                    'conn_noack': 5,
-                    'one_chan': 30,
-                    'multi_chan': 30,
-                    'ping_loop': 5}
+        self.client_types = {'conn_close': 30,
+                        'conn_noack': 5,
+                        'one_chan': 30,
+                        'multi_chan': 30,
+                        'ping_loop': 5}
 
     def opened(self):
         super(WsClient, self).opened()
@@ -64,10 +68,16 @@ class WsClient(WebSocketClient):
         self.uaid = get_uaid()
         self.version = int(str_gen(8))
         self.start_time = time.time()
-
         self.hello()
 
+    def run_forever(self, timeout=TIMEOUT):
+        # schedule the web socket to close in TIMEOUT seconds
+        # if the server does not do it
+        self.closer = gevent.spawn_later(TIMEOUT, self.close)
+        self.closer.join()
+
     def closed(self, code, reason=None):
+        self.closer.kill()
         super(WsClient, self).closed(code, reason)
         print('\nTime to register: %s s' % (self.reg_time - self.start_time))
         print('Time to notification: %s s' % (self.put_end - self.put_start))
