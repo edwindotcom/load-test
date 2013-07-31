@@ -3,14 +3,15 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 import json
 import time
-from wsocket import WsClient
+
+from loads.case import TestCase
+
 import gevent
 from gevent import monkey
 
-from loads.case import TestCase
+from wsocket import WsClient
 from pushtest.utils import (
     get_rand,
     get_prob,
@@ -20,14 +21,8 @@ from pushtest.utils import (
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
-VERBOSE = True
 PATCHED = False
 TIMEOUT  = 10
-
-
-def _log(txt):
-    if VERBOSE:
-        print '::', txt
 
 
 class TestLoad(TestCase):
