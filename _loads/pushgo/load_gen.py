@@ -6,7 +6,9 @@
 
 import json
 import time
-
+from wsocket import WsClient
+import gevent
+from gevent import monkey
 
 from loads.case import TestCase
 from pushtest.utils import (
@@ -19,6 +21,9 @@ from pushtest.utils import (
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
 VERBOSE = True
+PATCHED = False
+TIMEOUT  = 10
+
 
 def _log(txt):
     if VERBOSE:
@@ -38,12 +43,17 @@ class TestLoad(TestCase):
     You can run this by installing Loads and running this:
     loads-runner load_test.load_gen.TestLoad.test_load -c 10 -u 10
     """
-
     def test_load(self):
-        from wsocket import WsClient
-        from gevent import monkey
-        monkey.patch_all()
+        global PATCHED
+        if not PATCHED:
+            monkey.patch_all()
+            PATCHED = True
 
         ws = self.create_ws(TARGET_SERVER, klass=WsClient)
         ws.connect()
-        #ws.close()
+
+        # schedule the web socket to close in TIMEOUT seconds
+        closer = gevent.spawn_later(TIMEOUT, ws.close)
+
+        # wait here
+        closer.join()
