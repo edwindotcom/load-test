@@ -23,8 +23,11 @@ TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 # TARGET_SERVER = "ws://localhost:8080"
 VERBOSE = True
 TIMEOUT = 10
-logger = logging.getLogger('WsClient')
 
+logger = logging.getLogger('WsClient')
+fh = logging.FileHandler('/tmp/ws-client.log')
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
 
 
 class WsClient(WebSocketClient):
@@ -75,8 +78,8 @@ class WsClient(WebSocketClient):
 
     def closed(self, code, reason=None):
         super(WsClient, self).closed(code, reason)
-        print('\nTime to register: %s s' % (self.reg_time - self.start_time))
-        print('Time to notification: %s s' % (self.put_end - self.put_start))
+        logger.debug('Time to register: %s s' % (self.reg_time - self.start_time))
+        logger.debug('Time to notification: %s s' % (self.put_end - self.put_start))
         logger.debug("Closed down: %s %s" % (code, reason))
         self.closer.kill()
 
