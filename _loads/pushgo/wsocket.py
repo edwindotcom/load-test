@@ -3,11 +3,13 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-import gevent
 import json
 import time
-import os, sys
+import os
+import sys
 import logging
+
+import gevent
 
 from loads.case import TestCase
 from loads.websockets import WebSocketClient
@@ -42,9 +44,8 @@ class WsClient(WebSocketClient):
 
         self.count = 0
         self.sleep = 0
-        self.max_sleep = 5
+        self.max_sleep = 3
         self.max_updates = 10
-        self.timeout = 20
         self.closer = None
 
         self.put_end = 0
@@ -70,7 +71,7 @@ class WsClient(WebSocketClient):
     def closed(self, code, reason=None):
         super(WsClient, self).closed(code, reason)
         logger.error('Time to register: %s s' % (self.reg_time - self.start_time))
-        logger.error('Time to notification: %s s' % (self.put_start - self.put_end))
+        logger.error('Time to notification: %s s' % (self.put_end - self.put_start))
         logger.error("Closed down: %s %s" % (code, reason))
         self.closer.kill()
 
@@ -106,7 +107,7 @@ class WsClient(WebSocketClient):
                 self.close()
 
     def new_chan(self):
-        self.chan = str_gen(8)
+        self.chan = get_uaid()
         self.version = int(str_gen(8))
         self.hello()
 
@@ -178,6 +179,10 @@ class ChanClient(WsClient):
                 if self.chan_type == "new_chan":
                     self.unreg()
                     self.new_chan()
+                elif self.chan_type == "multi_chan":
+                    self.unreg()
+                    self.new_chan()
+                    self.new_chan()
                 else:
                     self.version += 1
                     self.put()
@@ -212,6 +217,3 @@ class FuzzClient(WsClient):
         logger.error(self.data)
         time.sleep(self.sleep)
         self.send_fuzz()
-
-
-

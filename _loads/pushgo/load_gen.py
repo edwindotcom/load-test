@@ -5,20 +5,26 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import json
 import time
-
-from loads.case import TestCase
+import random
 
 import gevent
 from gevent import monkey
 
+from loads.case import TestCase
 from wsocket import WsClient, PingClient, HelloClient, ChanClient, FuzzClient
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 PATCHED = False
-TIMEOUT  = 60
+TIMEOUT = 60
 
 
 class TestLoad(TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestLoad, self).__init__(*args, **kwargs)
+        self.choices = ([self.test_ping] * 20 + [self.test_hello] * 15 +
+                        [self.test_one_chan] * 25 + [self.test_new_chan] * 25 +
+                        [self.test_multi_chan] * 10 + [self.test_fuzz] * 5)
 
     def setup():
         global PATCHED
@@ -50,9 +56,9 @@ class TestLoad(TestCase):
         ws.connect()
         ws.run_forever(timeout=TIMEOUT)
 
-    def test_one_uaid(self):
+    def test_multi_chan(self):
         ws = self.create_ws(TARGET_SERVER, klass=ChanClient)
-        ws.chan_type = "one_uaid"
+        ws.chan_type = "multi_chan"
         ws.connect()
         ws.run_forever(timeout=TIMEOUT)
 
@@ -60,3 +66,15 @@ class TestLoad(TestCase):
         ws = self.create_ws(TARGET_SERVER, klass=FuzzClient)
         ws.connect()
         ws.run_forever(timeout=TIMEOUT)
+
+    def test_all(self):
+        """ Current rates:
+
+        - test_ping: 20%
+        - test_hello: 15%
+        - test_one_chan: 25%
+        - test_new_chan: 25%
+        - test_multi_chan: 10%
+        - test_fuzz: 5%
+        """
+        random.choice(self.choices)()
