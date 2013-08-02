@@ -22,6 +22,9 @@ from utils import (
     send_http_put)
 
 TIMEOUT = 60
+MIN_SLEEP = 0
+MAX_SLEEP = 1
+MAX_UPDATES = 4
 
 logger = logging.getLogger('WsClient')
 fh = logging.FileHandler('/tmp/ws-client.log')
@@ -43,9 +46,9 @@ class WsClient(WebSocketClient):
         self.data = {}
 
         self.count = 0
-        self.sleep = 0
-        self.max_sleep = 3
-        self.max_updates = 10
+        self.sleep = MIN_SLEEP
+        self.max_sleep = MAX_SLEEP
+        self.max_updates = MAX_UPDATES
         self.closer = None
 
         self.put_end = 0
@@ -55,7 +58,7 @@ class WsClient(WebSocketClient):
 
     def opened(self):
         super(WsClient, self).opened()
-        self.sleep = get_rand(self.max_sleep)
+        self.sleep = get_rand(self.max_sleep, self.sleep)
         self.chan = get_uaid()
         self.uaid = get_uaid()
         self.version = int(str_gen(8))
@@ -71,7 +74,7 @@ class WsClient(WebSocketClient):
     def closed(self, code, reason=None):
         super(WsClient, self).closed(code, reason)
         logger.error('Time to register: %s s' % (self.reg_time - self.start_time))
-        logger.error('Time to notification: %s s' % (self.put_end - self.put_start))
+        logger.error('Time to notification: %s s' % (self.put_start - self.put_end))
         logger.error("Closed down: %s %s" % (code, reason))
         self.closer.kill()
 
@@ -130,6 +133,11 @@ class WsClient(WebSocketClient):
 class PingClient(WsClient):
     """ Sends {} to server till max_updates interval is reached """
 
+    def __init__(self, *args, **kw):
+        super(PingClient, self).__init__(*args, **kw)
+        self.max_sleep = MAX_SLEEP
+        self.max_updates = MAX_UPDATES
+
     def proc_data(self):
         if "messageType" in self.data:
             time.sleep(self.sleep)
@@ -142,10 +150,16 @@ class PingClient(WsClient):
 class HelloClient(WsClient):
     """ Sends hello and closes socket """
 
+    def __init__(self, *args, **kw):
+        super(HelloClient, self).__init__(*args, **kw)
+        self.max_sleep = MAX_SLEEP
+        self.max_updates = MAX_UPDATES
+
     def proc_data(self):
         if "messageType" in self.data:
+            time.sleep(self.sleep)
             if self.data["messageType"] == "hello":
-                self.close()
+                self.new_chan()
 
 
 class ChanClient(WsClient):
@@ -155,6 +169,8 @@ class ChanClient(WsClient):
     def __init__(self, *args, **kw):
         super(ChanClient, self).__init__(*args, **kw)
         self.chan_type = ""
+        self.max_sleep = MAX_SLEEP
+        self.max_updates = MAX_UPDATES
 
     def opened(self):
         super(ChanClient, self).opened()
@@ -190,6 +206,11 @@ class ChanClient(WsClient):
 
 class FuzzClient(WsClient):
     """ Sends mixed messages to socket """
+
+    def __init__(self, *args, **kw):
+        super(ChanClient, self).__init__(*args, **kw)
+        self.max_sleep = MAX_SLEEP
+        self.max_updates = MAX_UPDATES
 
     def opened(self):
         super(FuzzClient, self).opened()
