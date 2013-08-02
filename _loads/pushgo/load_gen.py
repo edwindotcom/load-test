@@ -11,7 +11,11 @@ import gevent
 from gevent import monkey
 
 from loads.case import TestCase
-from wsocket import WsClient, PingClient, HelloClient, ChanClient, FuzzClient
+from wsocket import (WsClient,
+                     PingClient,
+                     HelloClient,
+                     ChanClient,
+                     FuzzClient)
 
 TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
 PATCHED = False

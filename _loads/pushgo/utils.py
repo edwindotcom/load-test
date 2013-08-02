@@ -6,8 +6,9 @@
 
 import string
 import random
-import urllib2
+# import urllib2
 import uuid
+import requests
 
 def str_gen(size=6, chars=string.digits):
     # generate rand string
@@ -31,21 +32,18 @@ def get_uaid(chan_str=""):
 def send_http_put(update_path, args='version=123',
                   ct='application/x-www-form-urlencoded',
                   exit_on_assert=False):
-    """ executes an HTTP PUT with version"""
-    opener = urllib2.build_opener(urllib2.HTTPHandler)
-    request = urllib2.Request(update_path, args)
-    request.add_header('Content-Type', ct)
-    request.get_method = lambda: 'PUT'
+    headers = {'Content-Type':ct}
+    ret = None
     try:
-        url = opener.open(request)
+        r = requests.put(update_path, data=args, headers=headers)
+        ret = r.status_code
     except Exception as e:
+        raise e
         if exit_on_assert:
             import pdb
             pdb.set_trace()
             exit('Exception in HTTP PUT: %s' % (e))
-        raise e
-    url.close()
-    return url.getcode()
+    return ret
 
 
 def comp_dict(ret_data, exp_data):
