@@ -6,7 +6,6 @@
 
 import string
 import random
-# import urllib2
 import uuid
 import requests
 
@@ -69,8 +68,8 @@ def get_endpoint(ws_url):
     return ret
 
 
-def get_rand(max):
-    return random.randrange(max)
+def get_rand(max, min=0):
+    return random.randrange(min, max)
 
 
 def get_prob(population):
