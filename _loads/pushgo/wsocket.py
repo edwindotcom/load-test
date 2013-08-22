@@ -92,9 +92,15 @@ class WsClient(WebSocketClient):
             '{"messageType":"unregister", "channelID":"%s"}' %
             self.uaid)
 
+    def send_http_put(self, endpoint, args):
+        session = self.test_case.session
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        res = session.put(endpoint, data=args, headers=headers)
+        assert res.status_code == 200
+
     def put(self):
         self.put_start = time.time()
-        send_http_put(self.endpoint, "version=%s" % self.version)
+        self.send_http_put(self.endpoint, "version=%s" % self.version)
 
     def ack(self):
         self.send('{"messageType":"ack",  "updates": [{"channelID": "%s", "version": %s}]}'
