@@ -17,7 +17,9 @@ from wsocket import (WsClient,
                      ChanClient,
                      FuzzClient)
 
-TARGET_SERVER = "ws://ec2-54-244-206-75.us-west-2.compute.amazonaws.com:8080"
+# TARGET_SERVER = "ws://localhost:8080"
+# TARGET_SERVER = "wss://push.services.mozilla.com"
+TARGET_SERVER = "wss://push.stage.mozaws.net"
 PATCHED = False
 TIMEOUT = 60
 MIN_SLEEP = 5
